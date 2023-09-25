@@ -4,12 +4,9 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.44.1"
     }
-    random = {
-      source = "hashicorp/random"
-      version = "3.5.1"
-    }
   }
   cloud {
+    organization = "mevijays"
     workspaces {
       name = "training-terraform"
     }
@@ -22,10 +19,7 @@ provider "azurerm" {
     }
   }
 }
-provider "random" {
-}
-
-
+/*
 variable "VMCOUNT" {
   default  = 1
   type     = number
@@ -164,7 +158,7 @@ resource "azurerm_linux_virtual_machine" "webvm" {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }
-  custom_data    = base64encode(data.template_file.linux-vm-cloud-init.rendered)
+  custom_data    = base64encode(local.custom_data)
   source_image_reference {
     publisher = "OpenLogic"
     offer     = "CentOS"
@@ -176,10 +170,10 @@ resource "azurerm_linux_virtual_machine" "webvm" {
         azurerm_network_interface.webvm
  ]
 }
-  data "template_file" "linux-vm-cloud-init" {
-  template = file("azure-user-data.sh")
+locals {
+  custom_data = file("azure-user-data.sh")
   }
-/*
+
 resource "azurerm_storage_account" "main" {
   name                     = "krlabmonstrbatch"
   resource_group_name      = azurerm_resource_group.krlabrg.name
@@ -190,7 +184,7 @@ resource "azurerm_storage_account" "main" {
     environment = "staging"
   }
 }
-*/
+
 variable "is_create_law" {
   type = bool
   default = false
@@ -203,3 +197,4 @@ count = var.is_create_law ? 1 : 0
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
+*/
