@@ -49,6 +49,7 @@ Windows 11 powershell winget install.
 ```powershell
  winget install Hashicorp.Terraform
  ```
+If winget is not working then download the exe binary and add binary in path same like given [here](https://www.radishlogic.com/terraform/how-to-install-terraform-in-windows-11/) 
  - **Linux:**  
  Any linux binary install way ..    
  Check for the latest release version [here](https://github.com/hashicorp/terraform/releases)
@@ -155,6 +156,108 @@ The [Terraform Registry](https://registry.terraform.io/) is the main directory o
 
 ### provider configurations
 
+## Providers example (all 3 major cloud)
+### AWS
+```
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+variable "secret_key" {
+}
+/*
+// environment variable way
+sh-
+% export AWS_ACCESS_KEY_ID="anaccesskey"
+% export AWS_SECRET_ACCESS_KEY="asecretkey"
+powershell-
+$env:AWS_ACCESS_KEY_ID="anaccesskey"
+$env:AWS_SECRET_ACCESS_KEY="asecretkey"
+*/
+provider "aws" {
+  region = "us-east-1"
+/*
+secret option
+access_key = "my-access-key"
+secret_key = var.secret_key 
+*/
+}
+
+resource "aws_vpc" "this" {
+  cidr_block = "192.168.0.0/22"
+}
+```
+### Azure
+```
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=3.0.0"
+    }
+  }
+}
+variable "client_secret" {
+}
+//Authentication option as environment variables.
+/*
+# sh
+export ARM_CLIENT_ID="00000000-0000-0000-0000-000000000000"
+export ARM_CLIENT_SECRET="12345678-0000-0000-0000-000000000000"
+export ARM_TENANT_ID="10000000-0000-0000-0000-000000000000"
+export ARM_SUBSCRIPTION_ID="20000000-0000-0000-0000-000000000000"
+# PowerShell
+> $env:ARM_CLIENT_ID = "00000000-0000-0000-0000-000000000000"
+> $env:ARM_CLIENT_SECRET = "12345678-0000-0000-0000-000000000000"
+> $env:ARM_TENANT_ID = "10000000-0000-0000-0000-000000000000"
+> $env:ARM_SUBSCRIPTION_ID = "20000000-0000-0000-0000-000000000000"
+*/
+provider "azurerm" {
+  features {}
+/*
+  client_id       = "00000000-0000-0000-0000-000000000000"
+  client_secret   = var.client_secret
+  tenant_id       = "10000000-0000-0000-0000-000000000000"
+  subscription_id = "20000000-0000-0000-0000-000000000000"
+*/
+}
+
+resource "azurerm_resource_group" "this" {
+  name     = "krlabrg"
+  location = "West Europe"
+}
+```
+### GCP
+```
+terraform {
+  required_providers {
+    google = {
+      source = "hashicorp/google"
+      version = "5.7.0"
+    }
+  }
+}
+/*
+Environment variable way
+export GOOGLE_APPLICATION_CREDENTIALS=key.json
+*/
+provider "google" {
+  project     = "my-project-id"
+  region      = "us-central1"
+  zone        = "us-central1-c"
+}
+
+resource "google_compute_network" "vpc_network" {
+  name                    = "terraform-network"
+  auto_create_subnetworks = "true"
+}
+```
+
+
 ```bash
 provider "google" {
   project = "acme-app"
@@ -214,7 +317,78 @@ The following operators are valid:
 
 
 
+## multi provider main.tf
+```
+# terraform block, anything inside this block you change, you have to run terraform init again.
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "5.73.0"
+    }
+    google = {
+      source = "hashicorp/google"
+      version = "6.8.0"
+    }
+    azurerm = {
+      source = "hashicorp/azurerm"
+      version = "4.7.0"
+    }
+  }
+}
 
+provider "aws" {
+  # Configuration options
+  region = "us-east-1"
+}
+
+provider "google" {
+  # Configuration options
+  project = "tflabs"
+}
+resource "azurerm_resource_group" "main" {
+  name     = "my-resource-group"
+  location = "East US"
+}
+resource "aws_vpc" "main" {
+  cidr_block = "192.168.1.0/24"
+  
+}
+
+resource "google_compute_network" "vpc_network" {
+  name                    = "my-vpc-network"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnet1" {
+  name          = "my-subnet-1"
+  ip_cidr_range = "10.0.1.0/24"
+  region        = "us-central1"
+  network       = google_compute_network.vpc_network.id
+}
+
+provider "azurerm" {
+  features {}
+  subscription_id = "1f41fc1d-b59a-4538-bdb7-b94d0fed85e3"
+}
+
+resource "azurerm_virtual_network" "main" {
+  name                = "my-vnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = "East US"
+  resource_group_name = azurerm_resource_group.main.name
+
+  subnet {
+    name           = "subnet1"
+    address_prefixes = ["10.0.1.0/24"]
+  }
+
+  subnet {
+    name           = "subnet2"
+    address_prefixes = ["10.0.2.0/24"]
+  }
+}
+```
 
 
 
